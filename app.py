@@ -88,14 +88,12 @@ def recommend(movie):
         movie_index = movies_list[movies_list['title'] == movie].index[0]
         distances = similarity[movie_index]
         
-        # Add debug logging
-        st.write(f"Debug - Movie Index: {movie_index}")
-        st.write(f"Debug - First few similarity scores: {distances[:5]}")
-        
-        movies_list_recommended = sorted(list(enumerate(distances)), reverse=True)[1:6]  # Skip the first (itself)
-        
-        # Add debug logging for recommended movies
-        st.write(f"Debug - Recommended movie indices: {[i[0] for i in movies_list_recommended]}")
+        # Sort by similarity score (second element), not by index
+        movies_list_recommended = sorted(
+            list(enumerate(distances)), 
+            key=lambda x: x[1],  # <-- This is the fix!
+            reverse=True
+        )[1:6]  # Skip the first (the movie itself)
         
         recommended_names = []
         recommended_details = []
@@ -108,11 +106,6 @@ def recommend(movie):
     except Exception as e:
         st.error(f"Error generating recommendations : {str(e)}")
         return [],[]
-
-selected_movie = st.selectbox(
-    'Select a movie you like',
-    movies_list['title'].values
-)
 
 if st.button('Show Recommendations'):
     with st.spinner("Finding similar movies..."):
