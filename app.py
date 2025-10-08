@@ -10,26 +10,26 @@ from dotenv import load_dotenv
 
 # configure retry strategy
 retry_strategy = Retry(
-    total = 3,
-    backoff_factor = 1,
-    status_forcelist = [500,502,503,504]
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[500, 502, 503, 504]
 )
 # 500: Internal Server Error
 # 502: Bad Gateway
 # 503: Service Unavailable
 # 504: Gateway Timeout
 http = requests.Session()
-http.mount("https://",HTTPAdapter(max_retries=retry_strategy))
+http.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 
 st.title("Movie Recommender System")
 
 # Load data
 try:
     current_dir = Path(__file__).parent
-    movies_list = pickle.load(open(current_dir / 'movie_list.pkl','rb'))
-    similarity = pickle.load(open(current_dir / 'similarity.pkl','rb'))
+    movies_list = pickle.load(open(current_dir / 'movie_list.pkl', 'rb'))
+    similarity = pickle.load(open(current_dir / 'similarity.pkl', 'rb'))
 except Exception as e:
-    st.error(f"Error loading files : {str(e)}")
+    st.error(f"Error loading files: {str(e)}")
     st.stop()
 
 # Get API key from Streamlit secrets in production, or from .env in development
@@ -91,7 +91,7 @@ def recommend(movie):
         # Sort by similarity score (second element), not by index
         movies_list_recommended = sorted(
             list(enumerate(distances)), 
-            key=lambda x: x[1],  # <-- This is the fix!
+            key=lambda x: x[1],  # Sort by similarity score
             reverse=True
         )[1:6]  # Skip the first (the movie itself)
         
@@ -104,21 +104,28 @@ def recommend(movie):
             recommended_details.append(fetch_movie_details(movie_id))
         return recommended_names, recommended_details
     except Exception as e:
-        st.error(f"Error generating recommendations : {str(e)}")
-        return [],[]
+        st.error(f"Error generating recommendations: {str(e)}")
+        return [], []
 
+# Movie selection dropdown
+selected_movie = st.selectbox(
+    'Select a movie you like',
+    movies_list['title'].values
+)
+
+# Show recommendations button
 if st.button('Show Recommendations'):
     with st.spinner("Finding similar movies..."):
         names, details = recommend(selected_movie)
         
         if not names:
-            st.error("Could not generate recommendation. Please try again later.")
+            st.error("Could not generate recommendations. Please try again later.")
         else:
             for i in range(len(names)):
-                col1,col2 = st.columns([1,3])
+                col1, col2 = st.columns([1, 3])
                 
                 with col1:
-                    st.image(details[i]['poster_path'],width=170)
+                    st.image(details[i]['poster_path'], width=170)
                 
                 with col2:
                     st.markdown(f"### {names[i]}")
